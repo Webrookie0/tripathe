@@ -11,7 +11,7 @@ export function createActivities(config: Config, store: OfferStore): HotelActivi
     const started = Date.now();
     log.info('Fetching supplier hotels', { supplier: name, city, attempt: info.attempt });
     try {
-      const hotels = await fetchSupplierHotels(name, city, config.supplierBaseUrl, config.supplierTimeoutMs, info.workflowExecution.workflowId);
+      const hotels = await fetchSupplierHotels(name, city, config.supplierBaseUrl, config.supplierTimeoutMs, info.workflowExecution?.workflowId);
       log.info('Supplier hotels received', { supplier: name, city, count: hotels.length, durationMs: Date.now() - started });
       return hotels;
     } catch (error) {
