@@ -1,0 +1,43 @@
+name: Verify hotel offer orchestrator
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      redis:
+        image: redis:7.4.2-alpine
+        ports:
+          - 6380:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - run: npm install --no-audit --no-fund
+      - run: npm run check
+      - run: npm run test:integration
+        env:
+          REDIS_URL: redis://127.0.0.1:6380
+      - run: docker compose config --quiet
+      - run: docker compose -f compose.yaml -f compose.ec2.yaml config --quiet
+      - run: bash -n scripts/deploy-ec2.sh
+      - run: docker compose up --build --detach --wait --wait-timeout 180
+      - run: npm run smoke
+      - name: Show stack logs
+        if: failure()
+        run: docker compose logs --no-color
+      - name: Stop stack
+        if: always()
+        run: docker compose down
